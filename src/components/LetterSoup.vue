@@ -5,7 +5,7 @@
     >Use a spoon to scoop out and match letters from bowls. Printing double-sided gives them more cards to choose from.</p>
 
     <v-row>
-      <v-col cols="12" md="6" lg="3">
+      <v-col cols="12" md="4" lg="3">
         <v-text-field
           label="Reproducible Set Number"
           v-model="seed"
@@ -17,14 +17,21 @@
           hint="Enter a number to reproduce the same set of cards."
         ></v-text-field>
       </v-col>
-      <v-col cols="12" md="6" lg="3">
+      <v-col cols="12" md="4" lg="3">
+        <v-btn-toggle v-model="labelFont" color="deep-purple accent-3" mandatory>
+          <v-btn value="times">Serif</v-btn>
+          <v-btn value="helvetica">Sans Serif</v-btn>
+          <v-btn value="comic">Comic</v-btn>
+        </v-btn-toggle>
+      </v-col>
+      <v-col cols="12" md="4" lg="3">
         <v-btn-toggle v-model="casing" color="deep-purple accent-3" mandatory>
           <v-btn value="upper">Uppercase</v-btn>
           <v-btn value="lower">Lowercase</v-btn>
           <v-btn value="mixed">Mixed</v-btn>
         </v-btn-toggle>
       </v-col>
-      <v-col cols="12" md="6" lg="3">
+      <v-col cols="12" md="4" lg="3">
         <v-text-field
           label="Number of Cards"
           v-model="count"
@@ -33,6 +40,13 @@
           v-mask="'####'"
           hint="How many cards?"
         ></v-text-field>
+      </v-col>
+      <v-col cols="12" md="4" lg="3">
+        <v-btn-toggle v-model="valueFont" color="deep-purple accent-3" mandatory>
+          <v-btn value="times">Serif</v-btn>
+          <v-btn value="helvetica">Sans Serif</v-btn>
+          <v-btn value="comic">Comic</v-btn>
+        </v-btn-toggle>
       </v-col>
       <v-col cols="12" md="6" lg="3">
         <v-btn color="indigo" dark @click="execute">Create</v-btn>
@@ -51,6 +65,8 @@
 import jsPDF from "jspdf";
 import MersenneTwister from "mersenne-twister";
 import { mask } from "vue-the-mask";
+require("../plugins/comic-normal");
+require("../plugins/comic-bold");
 
 export default {
   directives: {
@@ -60,6 +76,8 @@ export default {
     return {
       url: null,
       casing: "upper",
+      valueFont: "times",
+      labelFont: "comic",
       seed: null,
       pool: "abcdefghijklmnopqrstuvwxyz".split(""),
       letters: [],
@@ -93,6 +111,7 @@ export default {
     },
     generatePdf() {
       const doc = new jsPDF("portrait", "mm", "letter");
+      doc.setFont(this.labelFont);
       let first = true;
       for (let card = 0; card < this.count; card++) {
         if (!first && card % 3 == 0) {
@@ -114,17 +133,19 @@ export default {
         x = 107;
         y = offsetY + height * (card % 3);
         doc
+          .setFont(this.labelFont)
           .setFontSize(24)
-          .setFontStyle("bold")
+          .setFontStyle("normal")
           .text("Find your letters in your soup recipe.\n", x, y, {
             align: "center"
           });
 
-        offsetX = 30;
+        offsetX = 32;
         offsetY = 5;
         // Letters
         for (let i = 0; i <= 4; i++) {
           doc
+            .setFont(this.valueFont)
             .rect(offsetX + 30 * i, offsetY + y, 30, 30)
             .setFontSize(64)
             .setFontStyle("bold")
@@ -132,7 +153,13 @@ export default {
               align: "center"
             });
         }
-        
+        doc
+          .setFont('helvetica')
+          .setFontSize(8)
+          .setFontStyle("bold")
+          .text("# " + this.seed + " - " + (card + 1) + "/" + this.count, 181, offsetY + 33 + y, {
+            align: "right"
+          });
       }
       this.url = doc.output("datauristring");
     },
