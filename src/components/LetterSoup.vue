@@ -5,7 +5,7 @@
     >Use a spoon to scoop out and match letters from bowls. Printing double-sided gives them more cards to choose from.</p>
 
     <v-row>
-      <v-col cols="12"  md="6" lg="3">
+      <v-col cols="12" md="6" lg="3">
         <v-text-field
           label="Reproducible Set Number"
           v-model="seed"
@@ -17,14 +17,14 @@
           hint="Enter a number to reproduce the same set of cards."
         ></v-text-field>
       </v-col>
-      <v-col cols="12"  md="6" lg="3">
+      <v-col cols="12" md="6" lg="3">
         <v-btn-toggle v-model="casing" color="deep-purple accent-3" mandatory>
           <v-btn value="upper">Uppercase</v-btn>
           <v-btn value="lower">Lowercase</v-btn>
           <v-btn value="mixed">Mixed</v-btn>
         </v-btn-toggle>
       </v-col>
-      <v-col cols="12"  md="6" lg="3">
+      <v-col cols="12" md="6" lg="3">
         <v-text-field
           label="Number of Cards"
           v-model="count"
@@ -34,21 +34,21 @@
           hint="How many cards?"
         ></v-text-field>
       </v-col>
-      <v-col cols="12"  md="6" lg="3" >
+      <v-col cols="12" md="6" lg="3">
         <v-btn color="indigo" dark @click="execute">Create</v-btn>
       </v-col>
     </v-row>
 
     <v-row>
       <v-col>
-        <object id="pdf" :data="url" type="application/pdf"></object>
+        <iframe id="pdf" :src="url" type="application/pdf"></iframe>
       </v-col>
     </v-row>
   </v-container>
 </template>
 
 <script>
-import pdf from "pdfjs";
+import jsPDF from "jspdf";
 import MersenneTwister from "mersenne-twister";
 import { mask } from "vue-the-mask";
 
@@ -92,58 +92,49 @@ export default {
       this.generatePdf();
     },
     generatePdf() {
-      const doc = new pdf.Document();
+      const doc = new jsPDF("portrait", "mm", "letter");
       let first = true;
       for (let card = 0; card < this.count; card++) {
         if (!first && card % 3 == 0) {
-          doc.pageBreak();
+          doc.addPage();
         } else {
           first = false;
         }
-        let y = (28 - 9 * (card % 3)) * pdf.cm;
-        let cell = doc.cell({
-          y: y
-        });
-        cell.text("Find your letters in your soup recipe.\n ", {
-          font: require("pdfjs/font/Helvetica-Bold"),
-          lineHeight: 2,
-          fontSize: 24,
-          textAlign: "center"
-        });
 
-        cell = doc.cell({
-          x: 15 * pdf.mm,
-          y: y - 60
-        });
-        let table = cell.table({
-          widths: [100, 100, 100, 100, 100],
-          borderWidth: 1
-        });
+        let offsetX = 30,
+          offsetY = 93,
+          y = 0,
+          x = 0,
+          height = 94;
+        y = height * (card % 3);
+        doc.rect(0, y, 217, height);
 
-        const row = table.row();
-        for (let i = 0; i <= 4; i++) {
-          row.cell(this.letters.pop(), {
-            font: require("pdfjs/font/Helvetica-Bold"),
-            fontSize: 64,
-            textAlign: "center"
+        // Instructions
+        offsetY = 30;
+        x = 107;
+        y = offsetY + height * (card % 3);
+        doc
+          .setFontSize(24)
+          .setFontStyle("bold")
+          .text("Find your letters in your soup recipe.\n", x, y, {
+            align: "center"
           });
-        }
-        cell = doc.cell({
-          width: 520,
-          y: y - 145
-        });
-        cell.text("# " + this.seed + " - " + (card + 1) + "/" + this.count, {
-          font: require("pdfjs/font/Helvetica-Bold"),
-          fontSize: 8,
-          textAlign: "right"
-        });
-      }
 
-      doc.asBuffer((err, data) => {
-        this.url = URL.createObjectURL(
-          new Blob([data], { type: "application/pdf" })
-        );
-      });
+        offsetX = 30;
+        offsetY = 5;
+        // Letters
+        for (let i = 0; i <= 4; i++) {
+          doc
+            .rect(offsetX + 30 * i, offsetY + y, 30, 30)
+            .setFontSize(64)
+            .setFontStyle("bold")
+            .text(this.letters.pop(), offsetX + 15 + 30 * i, offsetY + 23 + y, {
+              align: "center"
+            });
+        }
+        
+      }
+      this.url = doc.output("datauristring");
     },
     shuffle(mersenne, arr) {
       // distilled from chancejs
