@@ -66,6 +66,13 @@ export default {
         description: "Use a spoon to scoop out and match letters from bowls.",
         route: "/letter-soup"
       },
+      {
+        text: "Word Soup",
+        icon: "mdi-bowl",
+        summary: "Find letters to build words",
+        description: "Use a spoon to scoop out and match letters from bowls and build words.",
+        route: "/word-soup"
+      },
 
       {
         text: "Sight Words",

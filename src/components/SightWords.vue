@@ -3,7 +3,7 @@
     <p class="text-justify">Trace the word down the maze.</p>
 
     <v-row>
-      <v-col cols="12" md="6" lg="3">
+      <v-col cols="12" md="4" lg="4">
         <v-text-field
           label="Reproducible Set Number"
           v-model="seed"
@@ -15,10 +15,26 @@
           hint="Enter a number to reproduce the same set of cards."
         ></v-text-field>
       </v-col>
-      <v-col cols="12" md="6" lg="3">
-        <v-select :items="words" label="Word" solo v-model="selectedWord"></v-select>
+      <v-col cols="12" md="4">
+        <v-select v-model="labelFont" :items="fonts" label="Label Font"></v-select>
       </v-col>
-      <v-col cols="12" md="6" lg="3">
+
+      <v-col cols="12" md="4">
+        <v-btn-toggle v-model="casing" color="deep-purple accent-3" mandatory>
+          <v-btn value="upper">Uppercase</v-btn>
+          <v-btn value="lower">Lowercase</v-btn>
+          <v-btn value="title">Titlecase</v-btn>
+        </v-btn-toggle>
+      </v-col>
+    </v-row>
+    <v-row>
+      <v-col cols="12" md="4" lg="4">
+        <v-select :items="words" v-model="selectedWord" label="Selected Word"></v-select>
+      </v-col>
+      <v-col cols="12" md="4">
+        <v-select v-model="valueFont" :items="fonts" label="Letters Font"></v-select>
+      </v-col>
+      <v-col cols="12" md="4" lg="4">
         <v-btn color="indigo" dark @click="execute">Create</v-btn>
       </v-col>
     </v-row>
@@ -36,6 +52,7 @@ import jsPDF from "jspdf";
 
 import MersenneTwister from "mersenne-twister";
 import { mask } from "vue-the-mask";
+require("../plugins/fonts");
 
 export default {
   directives: {
@@ -45,39 +62,45 @@ export default {
     return {
       url: null,
       selectedWord: "the",
+      casing: "lower",
+      fonts: Object.keys(new jsPDF().getFontList()).filter(
+        f => f.toLowerCase() != f && !['ZapfDingbats','Symbol'].includes(f)
+      ),
+      labelFont: "Comic Sans",
+      valueFont: "Futura Book",
       seed: null,
       words: [
-        "the",
-        "and",
-        "it",
-        "is",
-        "to",
-        "he",
-        "she",
-        "was",
-        "love",
-        "like",
-        "we",
+        "The",
+        "And",
+        "It",
+        "Is",
+        "To",
+        "He",
+        "She",
+        "Was",
+        "Love",
+        "Like",
+        "We",
         "I",
-        "you",
-        "at",
-        "for",
-        "can",
-        "a",
+        "You",
+        "At",
+        "For",
+        "Can",
+        "A",
         "play",
-        "see",
-        "me",
-        "my",
-        "yes",
-        "no",
-        "for",
-        "at",
-        "cat",
-        "rat",
-        "bat",
-        "mat",
-        "sat",
-        "pat"
+        "See",
+        "Me",
+        "My",
+        "Yes",
+        "No",
+        "For",
+        "At",
+        "Cat",
+        "Rat",
+        "Bat",
+        "Mat",
+        "Sat",
+        "Pat"
       ],
       //
       paths: [
@@ -287,17 +310,25 @@ export default {
           this.words.filter(w => w !== this.selectedWord)
         );
       }
-
+      if (this.casing === "upper") {
+        this.selectedWord = this.selectedWord.toUpperCase();
+        this.bank = this.bank.map(w => w.toUpperCase());
+      } else if (this.casing === "lower") {
+        this.selectedWord = this.selectedWord==='I'?'I':this.selectedWord.toLowerCase();
+        this.bank = this.bank.map(w => w==='I'?'I':w.toLowerCase());
+      } 
       this.generatePdf();
     },
     generatePdf() {
       //let card = 0;
       const doc = new jsPDF("portrait", "mm", "letter");
+      doc.setFont(this.labelFont);
       doc.setFontSize(24);
       doc.text("Name:", 10, 16);
       doc.text("Sight word search:", 100, 16);
       doc.setFontSize(26);
       doc.setFontStyle("bold");
+      doc.setFont(this.valueFont);
       doc.text(this.selectedWord, 180, 16);
       doc.setFontStyle("normal");
       doc.rect(5, 20, 205, 250);
@@ -328,7 +359,7 @@ export default {
         }
         y += r * 2 + 2;
       }
-      this.url = doc.output("datauristring");
+      this.url = doc.output("bloburi");
     },
     shuffle(mersenne, arr) {
       // distilled from chancejs
