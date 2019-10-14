@@ -13,6 +13,11 @@ export default new Router({
       component: () => import('./components/LetterSoup.vue')
     },
     {
+      path: '/word-soup',
+      name: 'word-soup',
+      component: () => import('./components/WordSoup.vue')
+    },
+    {
       path: '/sight-words',
       name: 'sight-words',
       component: () => import('./components/SightWords.vue')

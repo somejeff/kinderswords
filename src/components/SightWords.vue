@@ -87,7 +87,7 @@ export default {
         "For",
         "Can",
         "A",
-        "play",
+        "Play",
         "See",
         "Me",
         "My",

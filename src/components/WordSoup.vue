@@ -2,7 +2,7 @@
   <v-container>
     <p
       class="text-justify"
-    >Use a spoon to scoop out and match letters from bowls. Printing double-sided gives them more cards to choose from.</p>
+    >Use a spoon to scoop out and match letters from bowls that form words. Printing double-sided gives them more cards to choose from.</p>
 
     <v-row>
       <v-col cols="12" md="4">
@@ -24,7 +24,7 @@
         <v-btn-toggle v-model="casing" color="deep-purple accent-3" mandatory>
           <v-btn value="upper">Uppercase</v-btn>
           <v-btn value="lower">Lowercase</v-btn>
-          <v-btn value="mixed">Mixed</v-btn>
+          <v-btn value="title">Titlecase</v-btn>
         </v-btn-toggle>
       </v-col>
       <v-col cols="12" md="4">
@@ -68,13 +68,45 @@ export default {
       url: null,
       casing: "upper",
       fonts: Object.keys(new jsPDF().getFontList()).filter(
-        f => f.toLowerCase() != f && !['ZapfDingbats','Symbol'].includes(f)
+        f => f.toLowerCase() != f && !["ZapfDingbats", "Symbol"].includes(f)
       ),
       labelFont: "Comic Sans",
       valueFont: "Futura Book",
       seed: null,
-      pool: "abcdefghijklmnopqrstuvwxyz".split(""),
-      letters: [],
+      pool: [
+        "The",
+        "And",
+        "It",
+        "Is",
+        "To",
+        "He",
+        "She",
+        "Was",
+        "Love",
+        "Like",
+        "We",
+        "I",
+        "You",
+        "At",
+        "For",
+        "Can",
+        "A",
+        "Play",
+        "See",
+        "Me",
+        "My",
+        "Yes",
+        "No",
+        "For",
+        "At",
+        "Cat",
+        "Rat",
+        "Bat",
+        "Mat",
+        "Sat",
+        "Pat"
+      ],
+      words: [],
       count: 24
     };
   },
@@ -88,19 +120,20 @@ export default {
     },
     execute() {
       let mersenne = new MersenneTwister(this.seed);
-      this.letters = [];
+      this.words = [];
       for (let i = 0; i < Math.ceil(this.count / 5); i++) {
         let pool = this.shuffle(mersenne, this.pool);
-        pool.pop(); // drop the last letter, since it's not divisible by 5
-        this.letters = this.letters.concat(pool);
+        this.words = this.words.concat(pool);
       }
-      this.letters = this.letters.map(a => {
-        let casing = this.casing;
-        if (this.casing === "mixed") {
-          casing = mersenne.random() > 0.5 ? "upper" : "lower";
+      this.words = this.words.map(w => {
+        if (this.casing === "upper") {
+          return w.toUpperCase();
+        } else if (this.casing === "lower") {
+          return w.toLowerCase();
         }
-        return casing === "upper" ? a.toUpperCase() : a;
+        return w;
       });
+
       this.generatePdf();
     },
     generatePdf() {
@@ -139,16 +172,26 @@ export default {
             align: "center"
           });
 
-        offsetX = 32;
+        let letters = [];
+        while (letters.length < 7) {
+          letters = letters.concat(this.words.pop().split(""));
+          letters.push(" ");
+        }
+        letters.pop(); // remove the last empty space
+
+        const totalLetters = letters.length;
+
+        offsetX = (217 - totalLetters * 20) / 2;
         offsetY = 5;
+
         // Letters
-        for (let i = 0; i <= 4; i++) {
+        for (let i = 0; i < totalLetters; i++) {
           doc
             .setFont(this.valueFont)
-            .rect(offsetX + 30 * i, offsetY + y, 30, 30)
-            .setFontSize(64)
+            .rect(offsetX + 20 * i, offsetY + y, 20, 30)
+            .setFontSize(56)
             .setFontStyle("bold")
-            .text(this.letters.pop(), offsetX + 15 + 30 * i, offsetY + 23 + y, {
+            .text(letters.shift(), offsetX + 10 + 20 * i, offsetY + 23 + y, {
               align: "center"
             });
         }

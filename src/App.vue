@@ -9,7 +9,7 @@
             </v-list-item-icon>
             <v-list-item-content>
               <v-list-item-title v-text="item.text"></v-list-item-title>
-              <v-list-item-subtitle v-text="item.description"></v-list-item-subtitle>
+              <v-list-item-subtitle v-text="item.summary"></v-list-item-subtitle>
             </v-list-item-content>
           </v-list-item>
         </v-list-item-group>
@@ -69,7 +69,7 @@ export default {
       {
         text: "Word Soup",
         icon: "mdi-bowl",
-        summary: "Find letters to build words",
+        summary: "Find letters, build words",
         description: "Use a spoon to scoop out and match letters from bowls and build words.",
         route: "/word-soup"
       },
