@@ -3,7 +3,7 @@
     <p class="text-justify">Trace the word down the maze.</p>
 
     <v-row>
-      <v-col cols="12" md="4" lg="4">
+      <v-col cols="6" md="2" lg="2">
         <v-text-field
           label="Reproducible Set Number"
           v-model="seed"
@@ -14,6 +14,15 @@
           @click:append="random"
           hint="Enter a number to reproduce the same set of cards."
         ></v-text-field>
+      </v-col>
+
+      <v-col cols="6" md="2" lg="2">
+        <v-label light>Path</v-label>
+        <br />
+        <svg width="50" height="50" xmlns="http://www.w3.org/2000/svg">
+          <path d="M 0 0 h 50 v 50 h -50 Z" fill="transparent" stroke="black" />
+          <path :d="pathPreview" fill="transparent" stroke="black" />
+        </svg>
       </v-col>
       <v-col cols="12" md="4">
         <v-select v-model="labelFont" :items="fonts" label="Label Font"></v-select>
@@ -31,11 +40,12 @@
       <v-col cols="12" md="4" lg="4">
         <v-select :items="words" v-model="selectedWord" label="Selected Word"></v-select>
       </v-col>
-      <v-col cols="12" md="4">
+      <v-col cols="12" md="4" lg="4">
         <v-select v-model="valueFont" :items="fonts" label="Letters Font"></v-select>
       </v-col>
       <v-col cols="12" md="4" lg="4">
         <v-btn color="indigo" dark @click="execute">Create</v-btn>
+        <br />
       </v-col>
     </v-row>
 
@@ -61,10 +71,10 @@ export default {
   data() {
     return {
       url: null,
-      selectedWord: "the",
+      selectedWord: "The",
       casing: "lower",
       fonts: Object.keys(new jsPDF().getFontList()).filter(
-        f => f.toLowerCase() != f && !['ZapfDingbats','Symbol'].includes(f)
+        f => f.toLowerCase() != f && !["ZapfDingbats", "Symbol"].includes(f)
       ),
       labelFont: "Comic Sans",
       valueFont: "Futura Book",
@@ -102,193 +112,8 @@ export default {
         "Sat",
         "Pat"
       ],
-      //
-      paths: [
-        [
-          2,
-          10,
-          18,
-          25,
-          26,
-          33,
-          36,
-          37,
-          38,
-          41,
-          42,
-          43,
-          44,
-          46,
-          54,
-          62,
-          61,
-          68,
-          69,
-          76
-        ],
-        [
-          5,
-          10,
-          11,
-          12,
-          13,
-          18,
-          26,
-          27,
-          28,
-          36,
-          40,
-          41,
-          42,
-          43,
-          44,
-          48,
-          56,
-          57,
-          60,
-          61,
-          62,
-          65,
-          66,
-          67,
-          68,
-          70,
-          78
-        ],
-        [
-          1,
-          9,
-          17,
-          19,
-          20,
-          21,
-          22,
-          25,
-          26,
-          27,
-          30,
-          38,
-          46,
-          51,
-          52,
-          53,
-          54,
-          59,
-          67,
-          68,
-          76
-        ],
-        [
-          3,
-          11,
-          16,
-          17,
-          18,
-          19,
-          21,
-          22,
-          23,
-          24,
-          29,
-          31,
-          32,
-          33,
-          34,
-          36,
-          37,
-          39,
-          42,
-          43,
-          44,
-          47,
-          54,
-          55,
-          62,
-          70,
-          78
-        ],
-        [
-          6,
-          13,
-          14,
-          21,
-          29,
-          37,
-          45,
-          44,
-          52,
-          51,
-          50,
-          42,
-          34,
-          33,
-          32,
-          40,
-          48,
-          56,
-          64,
-          65,
-          73
-        ],
-        [
-          4,
-          12,
-          16,
-          17,
-          18,
-          20,
-          24,
-          26,
-          28,
-          32,
-          34,
-          35,
-          36,
-          40,
-          48,
-          49,
-          50,
-          51,
-          52,
-          53,
-          54,
-          62,
-          67,
-          68,
-          69,
-          70,
-          75
-        ],
-        [
-          0,
-          8,
-          16,
-          17,
-          18,
-          19,
-          11,
-          12,
-          13,
-          21,
-          29,
-          37,
-          38,
-          46,
-          54,
-          62,
-          61,
-          60,
-          59,
-          51,
-          50,
-          49,
-          57,
-          65,
-          64,
-          72
-        ]
-      ],
-      selectedPath: null,
+      currentPath: [],
+      pathPreview: "",
       count: 1,
       bank: null
     };
@@ -297,29 +122,165 @@ export default {
     this.random();
   },
   methods: {
-    random() {
-      this.seed = new Date().getTime() % 1000;
-      this.execute();
+    createPath(mersenne) {
+      let current = this.rand(mersenne, 0, 7);
+      this.currentPath = [current, (current += 8)];
+      while (current < 72) {
+        let paths = [
+          this.getDown(current),
+          this.getRight(current),
+          this.getLeft(current),
+          this.getUp(current)
+        ];
+        paths = paths.filter(p => p != null);
+        current = paths[this.rand(mersenne, 0, paths.length - 1)];
+        this.currentPath.push(current);
+      }
     },
-    execute() {
+    rand(mersenne, from, to) {
+      return Math.round(mersenne.random() * (to - from) + from);
+    },
+    random() {
+      this.url = "about:blank";
+      this.seed = new Date().getTime() % 1000;
+      this.execute(false);
+    },
+    execute(generate) {
       let mersenne = new MersenneTwister(this.seed);
-      this.selectedPath = this.shuffle(mersenne, this.paths).shift();
       this.bank = [];
       while (this.bank.length < 80) {
         this.bank = this.bank.concat(
           this.words.filter(w => w !== this.selectedWord)
         );
       }
+      let word = this.selectedWord;
       if (this.casing === "upper") {
-        this.selectedWord = this.selectedWord.toUpperCase();
+        word = word.toUpperCase();
         this.bank = this.bank.map(w => w.toUpperCase());
       } else if (this.casing === "lower") {
-        this.selectedWord = this.selectedWord==='I'?'I':this.selectedWord.toLowerCase();
-        this.bank = this.bank.map(w => w==='I'?'I':w.toLowerCase());
-      } 
-      this.generatePdf();
+        word = word === "I" ? "I" : word.toLowerCase();
+        this.bank = this.bank.map(w => (w === "I" ? "I" : w.toLowerCase()));
+      }
+      for (let i = 0; i < 10000; i++) {
+        this.createPath(mersenne);
+        if (this.isGood()) {
+          break;
+        }
+      }
+      this.createPathPreview();
+      if (generate) {
+        this.generatePdf(word);
+      }
     },
-    generatePdf() {
+    createPathPreview() {
+      let path = " M ";
+      path += (this.currentPath[0] - 1) * 5 + 15 + " 2 ";
+      this.currentPath.forEach((v, i, a) => {
+        if (v - a[i + 1] == 8) {
+          path += " v -5 ";
+        } else if (v - a[i + 1] == -8) {
+          path += " v 5 ";
+        } else if (v - a[i + 1] == 1) {
+          path += " h -5 ";
+        } else if (v - a[i + 1] == -1) {
+          path += " h 5 ";
+        }
+      });
+      this.pathPreview = path;
+    },
+    getDown(curr) {
+      curr += 8;
+      let targets = [curr];
+      if (curr % 8 != 0) {
+        targets.push(curr - 1);
+      }
+      if (curr % 8 != 7) {
+        targets.push(curr + 1);
+      }
+      return this.currentPath.filter(v => targets.includes(v)).length
+        ? null
+        : curr;
+    },
+    getRight(curr) {
+      curr += 1;
+
+      let targets = [curr, curr - 8];
+
+      for (let i = 8; i < 80; i = i + 8) {
+        targets.push(curr + i);
+      }
+      if (curr % 8 != 7) {
+        targets.push(curr + 1, curr - 7);
+      }
+      return this.currentPath.filter(v => targets.includes(v)).length ||
+        curr % 8 == 0
+        ? null
+        : curr;
+    },
+    getLeft(curr) {
+      curr -= 1;
+      let targets = [curr, curr - 8];
+      for (let i = 8; i < 80; i = i + 8) {
+        targets.push(curr + i);
+      }
+      if (curr % 8 != 0) {
+        targets.push(curr - 1, curr - 9);
+      }
+      return this.currentPath.filter(v => targets.includes(v)).length ||
+        curr % 8 == 7
+        ? null
+        : curr;
+    },
+    getUp(curr) {
+      curr -= 8;
+      // return null if any of these are true
+      return curr < 8 || // top row, too high
+      curr % 8 == 0 || // left column, won't be able to trun back
+      curr % 8 == 7 || // right column, can't turn back
+      (curr + 1) % 8 == 0 || // need two columns to turn back
+        (curr + 2) % 8 == 0 ||
+        (curr - 1) % 8 == 7 ||
+        (curr - 2) % 8 == 7 ||
+        this.currentPath.filter(v =>
+          [
+            curr,
+            curr - 1,
+            curr - 2,
+            curr + 1,
+            curr + 2,
+            curr - 8,
+            curr - 9,
+            curr - 7
+          ].includes(v)
+        ).length // too close to neighbors
+        ? null
+        : curr;
+    },
+    isGood() {
+      let up = this.currentPath.filter((v, i, a) => v - a[i + 1] == 8).length;
+
+      if (up < 2) {
+        return false;
+      }
+
+      let distribution =
+        this.currentPath.filter(i => i % 8 == 0).length +
+        this.currentPath.filter(i => i % 8 == 7).length;
+
+      if (distribution < 5) {
+        return false;
+      }
+      let spread = Math.abs(
+        this.currentPath.filter(i => i % 8 == 0).length -
+          this.currentPath.filter(i => i % 8 == 7).length
+      );
+
+      if (spread > 1) {
+        return false;
+      }
+      return true;
+    },
+    generatePdf(word) {
       //let card = 0;
       const doc = new jsPDF("portrait", "mm", "letter");
       doc.setFont(this.labelFont);
@@ -329,9 +290,9 @@ export default {
       doc.setFontSize(26);
       doc.setFontStyle("bold");
       doc.setFont(this.valueFont);
-      doc.text(this.selectedWord, 180, 16);
+      doc.text(word, 180, 16);
       doc.setFontStyle("normal");
-      doc.rect(5, 20, 205, 250);
+      doc.rect(5, 20, 200, 245);
 
       doc.setFontSize(20);
       let y = 34,
@@ -342,9 +303,10 @@ export default {
         for (let col = 0; col < 8; col++) {
           doc.circle(x, y, r);
           let w = this.bank.pop();
-          if (this.selectedPath.includes(c)) {
-            w = this.selectedWord;
+          if (this.currentPath.includes(c)) {
+            w = word;
             if (row == 0 || row == 9) {
+              doc.setFontSize(26);
               doc.setFontStyle("bold");
             }
           }
@@ -352,13 +314,18 @@ export default {
             (doc.getStringUnitWidth(w) * doc.internal.getFontSize()) /
             doc.internal.scaleFactor;
           var textOffset = x - textWidth / 2;
-          doc.text(w, textOffset, y + 3);
+          doc.text(w, textOffset, y + 2);
+          doc.setFontSize(20);
           doc.setFontStyle("normal");
           x += r * 2 + 2;
           c++;
         }
         y += r * 2 + 2;
       }
+
+      doc.setFontSize(12);
+      doc.setFont(this.valueFont);
+      doc.text("# " + this.seed, 205, 267, { align: "right", baseline: "top" });
       this.url = doc.output("bloburi");
     },
     shuffle(mersenne, arr) {
