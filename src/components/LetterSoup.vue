@@ -167,34 +167,14 @@ export default {
       }
       this.url = doc.output("bloburi");
     },
-    shuffle(mersenne, arr) {
-      // distilled from chancejs
-      var new_array = [],
-        j = 0,
-        length = Number(arr.length),
-        source_indexes = Array.apply(null, Array(length)).map(function(_, i) {
-          return i;
-        }),
-        last_source_index = length - 1,
-        selected_source_index;
-
-      for (var i = 0; i < length; i++) {
-        // Pick a random index from the array
-        selected_source_index = Math.floor(
-          mersenne.random() * last_source_index
-        );
-        j = source_indexes[selected_source_index];
-
-        // Add it to the new array
-        new_array[i] = arr[j];
-
-        // Mark the source index as used
-        source_indexes[selected_source_index] =
-          source_indexes[last_source_index];
-        last_source_index -= 1;
+    shuffle(mersenne, [...arr]) {
+      // https://www.30secondsofcode.org/snippet/shuffle
+      let m = arr.length;
+      while (m) {
+        const i = Math.floor(mersenne.random() * m--);
+        [arr[m], arr[i]] = [arr[i], arr[m]];
       }
-
-      return new_array;
+      return arr;
     }
   }
 };
